@@ -3,7 +3,7 @@ import { MoreVertical } from "lucide-react";
 
 export default function StatCard({ title, value, trend, positive, icon, iconBg = "bg-gray-100", iconFg = "text-gray-500" }) {
   return (
-    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-md hover:shadow-lg transition-shadow duration-150">
+    <div className="bg-white p-5 rounded-2xl border border-gray-200 transition-shadow duration-150">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           {icon && (
@@ -21,7 +21,7 @@ export default function StatCard({ title, value, trend, positive, icon, iconBg =
       <div className="flex items-end justify-between mt-3">
         <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
 
-        <div className="flex items-center gap-3 pl-4 border-l border-gray-100">
+        <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
           <span
             className={`text-xs px-2 py-1 rounded-full ${
               positive ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
