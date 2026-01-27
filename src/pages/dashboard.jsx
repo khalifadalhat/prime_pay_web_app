@@ -64,7 +64,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-md hover:shadow-lg flex-1 flex flex-col transition-shadow duration-150">
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 flex-1 flex flex-col transition-shadow duration-150">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-xl font-semibold">Monitoring Overview</h3>
@@ -88,7 +88,7 @@ export default function Dashboard() {
 
         {/* RIGHT: My Cards (stretches to match chart height) */}
         <div className="lg:col-span-4 flex">
-          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-md hover:shadow-lg w-full flex flex-col transition-shadow duration-150">
+          <div className="bg-white rounded-2xl p-4 border border-gray-200 w-full flex flex-col transition-shadow duration-150">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold">My Cards</h3>
               <button className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">Add New Card</button>
@@ -105,7 +105,7 @@ export default function Dashboard() {
 
       {/* Recent Transaction */}
       <div className="grid grid-cols-1 lg:grid-cols-12">
-      <div className="lg:col-span-12 bg-white rounded-2xl border border-gray-100 shadow-md p-6 transition-shadow duration-150">
+      <div className="lg:col-span-12 bg-white rounded-2xl border border-gray-200 p-6 transition-shadow duration-150">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold">Recent Transaction</h3>
           <div className="flex items-center gap-2">

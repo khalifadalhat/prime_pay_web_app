@@ -26,7 +26,7 @@ export default function Sidebar() {
     <aside className="w-72 bg-white border-r p-6 min-h-screen flex flex-col justify-between">
       <div>
         {/* Brand card */}
-        <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-100 shadow-md">
+        <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-200">
           <div className="flex items-center gap-3">
             <img src={primeLogo} alt="Prime Pay" className="w-10 h-10 rounded-lg" />
             <div>
