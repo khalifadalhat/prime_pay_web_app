@@ -1,6 +1,26 @@
 import { Plus, Download, Edit2, Trash2, ChevronsUpDown, Clock, FileText, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import StatusBadge from "../components/StatusBadge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 const orders = [
   {
@@ -266,12 +286,79 @@ export default function Users() {
                   <td className="p-4 align-middle text-gray-700 font-medium">{o.amount}</td>
                   <td className="p-4 align-middle text-gray-600">{o.payment}</td>
                   <td className="p-4 align-middle text-gray-500 flex items-center gap-2">
-                    <button className="text-gray-500 hover:text-gray-700 p-1">
-                      <Edit2 size={16} />
-                    </button>
-                    <button className="text-red-500 hover:text-red-700 p-1">
-                      <Trash2 size={16} />
-                    </button>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <button className="text-gray-500 hover:text-gray-700 p-1">
+                                <Edit2 size={16} />
+                            </button>
+                            </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Edit Order</DialogTitle>
+                            </DialogHeader>
+                            <form 
+                                className="space-y-4"
+                                onSubmit={(e) => {
+                                e.preventDefault();
+                                // Handle save logic here
+                                }}
+                            >
+                                <input
+                                className="w-full border p-2 rounded"
+                                defaultValue={o.name}
+                                placeholder="Customer Name"
+                                name="name"
+                                />
+                                <input
+                                className="w-full border p-2 rounded"
+                                defaultValue={o.id}
+                                placeholder="Order ID"
+                                name="orderId"
+                                />
+                                <input
+                                className="w-full border p-2 rounded"
+                                defaultValue={o.amount}
+                                placeholder="Amount"
+                                name="amount"
+                                />
+                                <button 
+                                type="submit"
+                                className="w-full bg-black text-white py-2 rounded hover:bg-gray-800"
+                                >
+                                Save Changes
+                                </button>
+                            </form>
+                            </DialogContent>
+                    </Dialog>
+                    {/* DELETE ORDER */}
+                    <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <button className="text-red-500 hover:text-red-700 p-1">
+                        <Trash2 size={16} />
+                        </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Order</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete order {o.id} for {o.name}?  
+                            This action cannot be undone.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                            // Handle delete logic here
+                            console.log('Deleting order:', o.id);
+                            }}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                    </AlertDialog>
                     <button className="text-gray-500 hover:text-gray-700 p-1">
                       <MoreHorizontal size={16} />
                     </button>
