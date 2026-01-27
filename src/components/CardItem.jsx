@@ -18,7 +18,7 @@ export default function CardItem({
     null;
 
   return (
-    <div className={`rounded-2xl p-4 bg-white relative overflow-hidden border border-gray-100 shadow-md hover:shadow-lg transition-shadow duration-150 ${status === 'Active' ? 'ring-2 ring-green-100' : ''}`}>
+    <div className={`rounded-2xl p-4 bg-white relative overflow-hidden border border-gray-100 transition-shadow duration-150 ${status === 'Active' ? 'border-green-100' : ''}`}>
       <div className="flex flex-col">
         <div className="whitespace-nowrap">
           <p className="text-2xl font-bold text-gray-900">{balance}</p>
