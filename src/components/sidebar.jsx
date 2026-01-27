@@ -10,36 +10,42 @@ import {
   CircleDollarSign,
   MessageCircleQuestionMark,
   LogOut,
+  ChevronsUpDown,
 } from "lucide-react";
+import primeLogo from "../assets/prime-pay-logo.png";
 
 export default function Sidebar() {
   const linkClass = ({ isActive }) =>
-    `flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm font-medium ${
+    `flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm font-medium border-l-4 ${
       isActive
-        ? "bg-blue-100 text-blue-600"
-        : "text-gray-600 hover:bg-gray-100"
+        ? "bg-blue-50 text-blue-600 border-l-blue-600"
+        : "text-gray-600 hover:bg-gray-50 border-l-transparent"
     }`;
 
   return (
     <aside className="w-72 bg-white border-r p-6 min-h-screen flex flex-col justify-between">
       <div>
         {/* Brand card */}
-        <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-100 shadow-md">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">PP</div>
+            <img src={primeLogo} alt="Prime Pay" className="w-10 h-10 rounded-lg" />
             <div>
               <h1 className="text-lg font-bold">Prime Pay</h1>
               <p className="text-xs text-gray-500">Finance App</p>
             </div>
+            <div className="ml-auto">
+              <button className="p-1 text-gray-400 hover:text-gray-600">
+                <ChevronsUpDown size={16} />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Menu card */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-gray-500 font-semibold mb-3">Menu</div>
+        <div>
+          <div className="text-xs text-gray-700 font-bold mb-3">Menu</div>
           <nav className="space-y-1">
             <NavLink to="/" className={linkClass}>
-              <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center text-blue-600"><LayoutDashboard size={16} /></div>
+              <LayoutDashboard size={18} />
               <span>Dashboard</span>
             </NavLink>
 
@@ -66,6 +72,7 @@ export default function Sidebar() {
             <NavLink to="/settings" className={linkClass}>
               <Settings size={18} />
               <span>Settings</span>
+              <span className="ml-auto text-gray-400"><ChevronsUpDown size={16} /></span>
             </NavLink>
 
             <NavLink to="/message" className={linkClass}>
@@ -79,6 +86,7 @@ export default function Sidebar() {
             <NavLink to="/investment" className={linkClass}>
               <CircleDollarSign size={18} />
               <span>Investment</span>
+              <span className="ml-auto text-gray-400"><ChevronsUpDown size={16} /></span>
             </NavLink>
           </nav>
         </div>

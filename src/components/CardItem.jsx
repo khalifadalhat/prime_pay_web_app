@@ -18,32 +18,31 @@ export default function CardItem({
     null;
 
   return (
-    <div className={`border rounded-2xl p-4 bg-white flex items-center justify-between ${status === 'Active' ? 'ring-2 ring-green-100 shadow-md' : ''}`}>
-      <div>
-        <p className="text-sm text-gray-500">{currency}</p>
-        <p className="text-2xl font-bold mt-1 text-gray-900">{balance}</p>
+    <div className={`rounded-2xl p-4 bg-white relative overflow-hidden border border-gray-100 shadow-md hover:shadow-lg transition-shadow duration-150 ${status === 'Active' ? 'ring-2 ring-green-100' : ''}`}>
+      <div className="flex flex-col">
+        <div className="whitespace-nowrap">
+          <p className="text-2xl font-bold text-gray-900">{balance}</p>
+          <p className="text-sm text-gray-500 mt-1">{currency}</p>
+        </div>
+
         <div className="mt-3">
-          <span
-            className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-              status === "Active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
-            }`}
-          >
+          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${status === "Active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
             {status}
           </span>
         </div>
       </div>
 
-      <div className="w-64 h-36 bg-gray-50 rounded-xl p-4 flex flex-col justify-between">
+      <div className="absolute bottom-0 right-0 w-40 h-24 bg-gray-50 rounded-tl-xl p-3 flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <div className="w-8 h-8 rounded-md bg-gray-200" />
+          <div className="w-6 h-6 rounded-md bg-gray-200" />
           <div className="flex items-center">
-            {logoSrc ? <img src={logoSrc} alt="brand" className="h-6" /> : <div className="text-xs text-gray-400">{brand}</div>}
+            {logoSrc ? <img src={logoSrc} alt="brand" className="h-4" /> : <div className="text-xs text-gray-400">{brand}</div>}
           </div>
         </div>
 
         <div className="text-right">
-          <div className="text-sm text-gray-500">{type}</div>
-          <div className="text-xs text-gray-400 tracking-widest mt-2">**** **** **** {last4 || brand?.slice(-4)}</div>
+          <div className="text-xs text-gray-500">{type}</div>
+          <div className="text-[10px] text-gray-400 tracking-widest mt-1">**** **** **** {last4 || brand?.slice(-4)}</div>
         </div>
       </div>
     </div>

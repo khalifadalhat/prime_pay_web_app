@@ -1,7 +1,8 @@
 import StatCard from "../components/StatCard";
 import RevenueChart from "../charts/RevenueChart";
 import CardItem from "../components/CardItem";
-import { Search, Bell, Mail } from "lucide-react";
+import { Search, Bell, Mail, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Wallet, CircleDollarSign } from "lucide-react";
 
 export default function Dashboard() {
   return (
@@ -29,29 +30,57 @@ export default function Dashboard() {
             <button className="p-2 rounded-full hover:bg-gray-100">
               <Bell size={18} />
             </button>
-            <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">E</div>
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">E</div>
+              <button className="p-1 text-gray-500 hover:text-gray-700">
+                <ChevronDown size={16} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main grid: left = stats + chart, right = My Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* LEFT: stats stacked above chart (major area) */}
         <div className="lg:col-span-8 flex flex-col space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <StatCard title="Total Balance" value="$82,620" trend="+8% to last month" positive />
-            <StatCard title="Total Spending" value="$54,870" trend="-2% to last month" />
+            <StatCard
+              title="Total Balance"
+              value="$82,620"
+              trend="+8% to last month"
+              positive
+              icon={<Wallet />}
+              iconBg="bg-blue-100"
+              iconFg="text-blue-600"
+            />
+            <StatCard
+              title="Total Spending"
+              value="$54,870"
+              trend="-2% to last month"
+              icon={<CircleDollarSign />}
+              iconBg="bg-yellow-100"
+              iconFg="text-yellow-600"
+            />
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm flex-1">
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-md hover:shadow-lg flex-1 flex flex-col transition-shadow duration-150">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Monitoring Overview</h3>
+              <div>
+                <h3 className="text-xl font-semibold">Monitoring Overview</h3>
+                <div className="text-xs text-gray-500 mt-1 flex items-center gap-3">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                  <span>Earnings</span>
+                  <span className="w-2 h-2 rounded-full bg-pink-200 inline-block ml-2" />
+                  <span>Expenses</span>
+                </div>
+              </div>
               <select className="border rounded-lg px-3 py-1 text-sm">
                 <option>Monthly</option>
               </select>
             </div>
 
-            <div className="h-[320px]">
+            <div className="flex-1 min-h-[260px]">
               <RevenueChart />
             </div>
           </div>
@@ -59,7 +88,7 @@ export default function Dashboard() {
 
         {/* RIGHT: My Cards (stretches to match chart height) */}
         <div className="lg:col-span-4 flex">
-          <div className="bg-white rounded-2xl p-4 shadow-sm w-full flex flex-col">
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-md hover:shadow-lg w-full flex flex-col transition-shadow duration-150">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold">My Cards</h3>
               <button className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">Add New Card</button>
@@ -76,7 +105,7 @@ export default function Dashboard() {
 
       {/* Recent Transaction */}
       <div className="grid grid-cols-1 lg:grid-cols-12">
-        <div className="lg:col-span-12 bg-white rounded-2xl shadow-sm p-6">
+      <div className="lg:col-span-12 bg-white rounded-2xl border border-gray-100 shadow-md p-6 transition-shadow duration-150">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold">Recent Transaction</h3>
           <div className="flex items-center gap-2">
@@ -89,11 +118,51 @@ export default function Dashboard() {
           <table className="w-full text-sm">
             <thead className="text-gray-500">
               <tr>
-                <th className="text-left p-3">Deal ID</th>
-                <th className="text-left p-3">Customer Name</th>
-                <th className="text-left p-3">Customer Email</th>
-                <th className="text-left p-3">Date</th>
-                <th className="text-left p-3">Amount</th>
+                <th className="text-left p-3">
+                  <div className="flex items-center gap-2">
+                    <span>Deal ID</span>
+                    <button className="text-gray-400 hover:text-gray-600 p-1">
+                      <ChevronsUpDown size={14} />
+                    </button>
+                  </div>
+                </th>
+
+                <th className="text-left p-3">
+                  <div className="flex items-center gap-2">
+                    <span>Customer Name</span>
+                    <button className="text-gray-400 hover:text-gray-600 p-1">
+                      <ChevronsUpDown size={14} />
+                    </button>
+                  </div>
+                </th>
+
+                <th className="text-left p-3">
+                  <div className="flex items-center gap-2">
+                    <span>Customer Email</span>
+                    <button className="text-gray-400 hover:text-gray-600 p-1">
+                      <ChevronsUpDown size={14} />
+                    </button>
+                  </div>
+                </th>
+
+                <th className="text-left p-3">
+                  <div className="flex items-center gap-2">
+                    <span>Date</span>
+                    <button className="text-gray-400 hover:text-gray-600 p-1">
+                      <ChevronsUpDown size={14} />
+                    </button>
+                  </div>
+                </th>
+
+                <th className="text-left p-3">
+                  <div className="flex items-center gap-2">
+                    <span>Amount</span>
+                    <button className="text-gray-400 hover:text-gray-600 p-1">
+                      <ChevronsUpDown size={14} />
+                    </button>
+                  </div>
+                </th>
+
                 <th className="text-left p-3">Deal Stage</th>
                 <th className="text-left p-3">Actions</th>
               </tr>
