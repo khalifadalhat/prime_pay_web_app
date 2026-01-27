@@ -119,28 +119,28 @@ export default function Users() {
 
       {/* Summary cards with colored indicators */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="border border-gray-100 rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow duration-150">
+        <div className="border border-gray-200 rounded-xl p-4 transition-shadow duration-150">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 rounded-full bg-blue-500"></div>
             <p className="text-sm text-gray-600">Total Orders This Month</p>
           </div>
           <p className="text-3xl font-bold text-gray-900">200</p>
         </div>
-        <div className="border border-gray-100 rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow duration-150">
+        <div className="border border-gray-200 rounded-xl p-4  transition-shadow duration-150">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 rounded-full bg-orange-500"></div>
             <p className="text-sm text-gray-600">Pending Orders</p>
           </div>
           <p className="text-3xl font-bold text-gray-900">20</p>
         </div>
-        <div className="border border-gray-100 rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow duration-150">
+        <div className="border border-gray-200 rounded-xl p-4 transition-shadow duration-150">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 rounded-full bg-green-500"></div>
             <p className="text-sm text-gray-600">Shipped Orders</p>
           </div>
           <p className="text-3xl font-bold text-gray-900">180</p>
         </div>
-        <div className="border border-gray-100 rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow duration-150">
+        <div className="border border-gray-200 rounded-xl p-4 transition-shadow duration-150">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 rounded-full bg-red-500"></div>
             <p className="text-sm text-gray-600">Refunded Orders</p>
@@ -166,9 +166,9 @@ export default function Users() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-md overflow-x-auto relative">
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto relative">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="p-4 text-left w-12">
                 <input
@@ -228,7 +228,7 @@ export default function Users() {
               return (
                 <tr
                   key={o.id}
-                  className={`border-t border-gray-100 ${
+                  className={`border-t border-gray-200 ${
                     isSel ? "bg-blue-50" : "hover:bg-gray-50"
                   }`}
                 >
@@ -284,7 +284,7 @@ export default function Users() {
 
         {/* Bulk action toolbar */}
         {selected.length > 0 && (
-          <div className="absolute left-1/2 transform -translate-x-1/2 -bottom-14 bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 flex items-center gap-4 whitespace-nowrap">
+          <div className="absolute left-1/2 transform -translate-x-1/2 -bottom-14 bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-4 whitespace-nowrap">
             <div className="text-sm font-medium text-gray-900">
               {selected.length} Selected
             </div>
@@ -302,7 +302,7 @@ export default function Users() {
         )}
 
         {/* Footer with pagination */}
-        <div className="flex items-center justify-between px-6 py-4 text-sm text-gray-600 border-t border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 text-sm text-gray-600 border-t border-gray-200">
           <div>
             Showing <span className="font-semibold text-gray-900">1-9</span> of{" "}
             <span className="font-semibold text-gray-900">240</span> entries
