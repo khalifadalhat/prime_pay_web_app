@@ -1,6 +1,5 @@
 import { Plus, Download, Edit2, Trash2, ChevronsUpDown, Clock, FileText, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
-import StatusBadge from "../components/StatusBadge";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +7,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,90 +19,62 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-
-const orders = [
-  {
-    id: "#ORD1008",
-    name: "Esther Kiehn",
-    date: "17 Dec 2024",
-    status: "Pending",
-    amount: "$10.50",
-    payment: "Unpaid",
-  },
-  {
-    id: "#ORD1007",
-    name: "Denise Kuhn",
-    date: "16 Dec 2024",
-    status: "Pending",
-    amount: "$100.50",
-    payment: "Unpaid",
-  },
-  {
-    id: "#ORD1006",
-    name: "Clint Hoppe",
-    date: "16 Dec 2024",
-    status: "Completed",
-    amount: "$60.56",
-    payment: "Paid",
-  },
-  {
-    id: "#ORD1005",
-    name: "Darin Deckow",
-    date: "16 Dec 2024",
-    status: "Refunded",
-    amount: "$640.50",
-    payment: "Paid",
-  },
-  {
-    id: "#ORD1004",
-    name: "Jacquelyn Robel",
-    date: "15 Dec 2024",
-    status: "Completed",
-    amount: "$39.50",
-    payment: "Paid",
-  },
-  {
-    id: "#ORD1003",
-    name: "Clint Hoppe",
-    date: "16 Dec 2024",
-    status: "Completed",
-    amount: "$29.50",
-    payment: "Paid",
-  },
-  {
-    id: "#ORD1002",
-    name: "Erin Bins",
-    date: "16 Dec 2024",
-    status: "Completed",
-    amount: "$120.35",
-    payment: "Paid",
-  },
-  {
-    id: "#ORD1001",
-    name: "Gretchen Quitz",
-    date: "14 Dec 2024",
-    status: "Refunded",
-    amount: "$123.50",
-    payment: "Paid",
-  },
-  {
-    id: "#ORD1000",
-    name: "Stewart Kulas",
-    date: "13 Dec 2024",
-    status: "Completed",
-    amount: "$89.99",
-    payment: "Paid",
-  },
-];
-
 export default function Users() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selected, setSelected] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+
+  // Fetch data from RandomUser API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('https://randomuser.me/api/?results=50');
+        const data = await response.json();
+        
+        // Transform the API data to include gender, name, email, and address
+        const transformedOrders = data.results.map((user, index) => {
+          const userNum = 1000 + index;
+          const fullAddress = `${user.location.street.number} ${user.location.street.name}, ${user.location.city}, ${user.location.state}, ${user.location.country}`;
+          
+          return {
+            id: `#USR${userNum}`,
+            gender: user.gender.charAt(0).toUpperCase() + user.gender.slice(1),
+            name: `${user.name.first} ${user.name.last}`,
+            email: user.email,
+            address: fullAddress,
+            city: user.location.city,
+            country: user.location.country,
+            phone: user.phone,
+            registeredDate: new Date(user.registered.date).toLocaleDateString('en-US', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }),
+            picture: user.picture.thumbnail,
+          };
+        });
+        
+        setOrders(transformedOrders);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to fetch orders');
+        setLoading(false);
+        console.error('Error fetching users:', err);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const toggle = (id) => {
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   };
 
-  const allSelected = selected.length === orders.length;
+  const allSelected = selected.length === orders.length && orders.length > 0;
 
   const getInitials = (name) => {
     return name
@@ -115,68 +85,98 @@ export default function Users() {
       .toUpperCase();
   };
 
-  return (
-    <div className="space-y-6 px-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-semibold text-gray-900">All Orders</h2>
+  // Calculate statistics
+  const totalUsers = orders.length;
+  const maleUsers = orders.filter(o => o.gender === 'Male').length;
+  const femaleUsers = orders.filter(o => o.gender === 'Female').length;
+  const registeredThisMonth = orders.filter(o => {
+    const regDate = new Date(o.registeredDate);
+    const now = new Date();
+    return regDate.getMonth() === now.getMonth() && regDate.getFullYear() === now.getFullYear();
+  }).length;
 
+  // Pagination
+  const totalPages = Math.ceil(orders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentOrders = orders.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setSelected([]); // Clear selection when changing pages
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center text-red-600">
+          <p className="text-xl font-semibold mb-2">Error</p>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">All Users</h1>
         <div className="flex gap-3">
-          <button className="border border-gray-200 px-4 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-gray-50">
-            <Clock size={16} />
-            Bulk Update Status
+          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Bulk Actions
           </button>
-          <button className="border border-gray-200 px-4 py-2 rounded-lg text-sm flex gap-2 items-center hover:bg-gray-50">
-            <FileText size={16} />
-            Export Orders
+          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+            <Download className="w-4 h-4" />
+            Export Users
           </button>
-          <button className="bg-gray-900 text-white px-4 py-2 rounded-lg flex gap-2 items-center hover:bg-gray-800">
-            <Plus size={16} />
-            Add Orders
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Add User
           </button>
         </div>
       </div>
 
       {/* Summary cards with colored indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="border border-gray-200 rounded-xl p-4 transition-shadow duration-150">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-            <p className="text-sm text-gray-600">Total Orders This Month</p>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">200</p>
+      <div className="grid grid-cols-4 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+          <p className="text-sm text-gray-600 mb-1">Total Users</p>
+          <p className="text-3xl font-bold text-gray-900">{totalUsers}</p>
         </div>
-        <div className="border border-gray-200 rounded-xl p-4  transition-shadow duration-150">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-            <p className="text-sm text-gray-600">Pending Orders</p>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">20</p>
+        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
+          <p className="text-sm text-gray-600 mb-1">Male Users</p>
+          <p className="text-3xl font-bold text-gray-900">{maleUsers}</p>
         </div>
-        <div className="border border-gray-200 rounded-xl p-4 transition-shadow duration-150">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            <p className="text-sm text-gray-600">Shipped Orders</p>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">180</p>
+        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-pink-500">
+          <p className="text-sm text-gray-600 mb-1">Female Users</p>
+          <p className="text-3xl font-bold text-gray-900">{femaleUsers}</p>
         </div>
-        <div className="border border-gray-200 rounded-xl p-4 transition-shadow duration-150">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-red-500"></div>
-            <p className="text-sm text-gray-600">Refunded Orders</p>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">10</p>
+        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+          <p className="text-sm text-gray-600 mb-1">Registered This Month</p>
+          <p className="text-3xl font-bold text-gray-900">{registeredThisMonth}</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-8 border-b text-sm">
-        {["All", "Incomplete", "Overdue", "Ongoing", "Finished"].map((t) => (
+      <div className="mb-6 flex gap-1 border-b">
+        {["All", "Male", "Female", "Recently Registered", "Active"].map((t) => (
           <button
             key={t}
-            className={`pb-3 font-medium transition ${
+            className={`px-4 py-2 font-medium ${
               t === "All"
-                ? "border-b-2 border-blue-600 text-gray-900"
+                ? "text-blue-600 border-b-2 border-blue-600"
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
@@ -186,73 +186,52 @@ export default function Users() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto relative">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="p-4 text-left w-12">
+              <th className="px-6 py-4 text-left">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={() =>
-                    allSelected
-                      ? setSelected([])
-                      : setSelected(orders.map((o) => o.id))
+                    allSelected ? setSelected([]) : setSelected(currentOrders.map((o) => o.id))
                   }
                   className="w-4 h-4 rounded"
                 />
               </th>
-              <th className="p-4 text-left text-gray-600 font-medium">
-                <div className="flex items-center gap-2">
-                  Order Number
-                  <ChevronsUpDown size={14} className="text-gray-400" />
-                </div>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                User ID
               </th>
-              <th className="p-4 text-left text-gray-600 font-medium">
-                <div className="flex items-center gap-2">
-                  Customer Name
-                  <ChevronsUpDown size={14} className="text-gray-400" />
-                </div>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Name
               </th>
-              <th className="p-4 text-left text-gray-600 font-medium">
-                <div className="flex items-center gap-2">
-                  Order Date
-                  <ChevronsUpDown size={14} className="text-gray-400" />
-                </div>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Gender
               </th>
-              <th className="p-4 text-left text-gray-600 font-medium">
-                <div className="flex items-center gap-2">
-                  Status
-                  <ChevronsUpDown size={14} className="text-gray-400" />
-                </div>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Email
               </th>
-              <th className="p-4 text-left text-gray-600 font-medium">
-                <div className="flex items-center gap-2">
-                  Total Amount
-                  <ChevronsUpDown size={14} className="text-gray-400" />
-                </div>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Address
               </th>
-              <th className="p-4 text-left text-gray-600 font-medium">
-                <div className="flex items-center gap-2">
-                  Payment Status
-                  <ChevronsUpDown size={14} className="text-gray-400" />
-                </div>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Phone
               </th>
-              <th className="p-4 text-left text-gray-600 font-medium">Action</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Action
+              </th>
             </tr>
           </thead>
-
-          <tbody>
-            {orders.map((o) => {
+          <tbody className="divide-y">
+            {currentOrders.map((o) => {
               const isSel = selected.includes(o.id);
               return (
                 <tr
                   key={o.id}
-                  className={`border-t border-gray-200 ${
-                    isSel ? "bg-blue-50" : "hover:bg-gray-50"
-                  }`}
+                  className={`hover:bg-gray-50 ${isSel ? "bg-blue-50" : ""}`}
                 >
-                  <td className="p-4 align-middle">
+                  <td className="px-6 py-4">
                     <input
                       type="checkbox"
                       checked={isSel}
@@ -260,165 +239,270 @@ export default function Users() {
                       className="w-4 h-4 rounded"
                     />
                   </td>
-                  <td className="p-4 align-middle text-gray-700 font-medium">{o.id}</td>
-                  <td className="p-4 align-middle">
+                  <td className="px-6 py-4 font-medium text-gray-900">{o.id}</td>
+                  <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-xs text-white font-bold">
-                        {getInitials(o.name)}
+                      {o.picture ? (
+                        <img
+                          src={o.picture}
+                          alt={o.name}
+                          className="w-10 h-10 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+                          {getInitials(o.name)}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-gray-900">{o.name}</p>
                       </div>
-                      <div className="text-sm text-gray-700">{o.name}</div>
                     </div>
                   </td>
-                  <td className="p-4 align-middle text-gray-600">{o.date}</td>
-                  <td className="p-4 align-middle">
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                        o.status === "Completed"
-                          ? "bg-green-100 text-green-700"
-                          : o.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {o.status}
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      o.gender === 'Male' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'bg-pink-100 text-pink-700'
+                    }`}>
+                      {o.gender}
                     </span>
                   </td>
-                  <td className="p-4 align-middle text-gray-700 font-medium">{o.amount}</td>
-                  <td className="p-4 align-middle text-gray-600">{o.payment}</td>
-                  <td className="p-4 align-middle text-gray-500 flex items-center gap-2">
-                    <Dialog>
+                  <td className="px-6 py-4 text-gray-600 text-sm">{o.email}</td>
+                  <td className="px-6 py-4 text-gray-600 text-sm max-w-xs truncate" title={o.address}>
+                    {o.address}
+                  </td>
+                  <td className="px-6 py-4 text-gray-600 text-sm">{o.phone}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      {/* EDIT USER */}
+                      <Dialog>
                         <DialogTrigger asChild>
-                            <button className="text-gray-500 hover:text-gray-700 p-1">
-                                <Edit2 size={16} />
-                            </button>
-                            </DialogTrigger>
+                          <button className="p-2 hover:bg-gray-100 rounded">
+                            <Edit2 className="w-4 h-4 text-gray-600" />
+                          </button>
+                        </DialogTrigger>
                         <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Edit Order</DialogTitle>
-                            </DialogHeader>
-                            <form 
-                                className="space-y-4"
-                                onSubmit={(e) => {
-                                e.preventDefault();
-                                // Handle save logic here
-                                }}
-                            >
-                                <input
-                                className="w-full border p-2 rounded"
-                                defaultValue={o.name}
-                                placeholder="Customer Name"
-                                name="name"
-                                />
-                                <input
-                                className="w-full border p-2 rounded"
-                                defaultValue={o.id}
-                                placeholder="Order ID"
-                                name="orderId"
-                                />
-                                <input
-                                className="w-full border p-2 rounded"
-                                defaultValue={o.amount}
-                                placeholder="Amount"
-                                name="amount"
-                                />
-                                <button 
-                                type="submit"
-                                className="w-full bg-black text-white py-2 rounded hover:bg-gray-800"
-                                >
-                                Save Changes
-                                </button>
-                            </form>
-                            </DialogContent>
-                    </Dialog>
-                    {/* DELETE ORDER */}
-                    <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <button className="text-red-500 hover:text-red-700 p-1">
-                        <Trash2 size={16} />
-                        </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Order</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete order {o.id} for {o.name}?  
-                            This action cannot be undone.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => {
-                            // Handle delete logic here
-                            console.log('Deleting order:', o.id);
+                          <DialogHeader>
+                            <DialogTitle>Edit User</DialogTitle>
+                          </DialogHeader>
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              // Handle save logic here
                             }}
-                            className="bg-red-600 hover:bg-red-700"
-                        >
-                            Delete
-                        </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                    </AlertDialog>
-                    <button className="text-gray-500 hover:text-gray-700 p-1">
-                      <MoreHorizontal size={16} />
-                    </button>
+                          >
+                            <div className="space-y-4 py-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1">
+                                  User ID
+                                </label>
+                                <input
+                                  type="text"
+                                  defaultValue={o.id}
+                                  className="w-full px-3 py-2 border rounded-lg"
+                                  disabled
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">
+                                  Name
+                                </label>
+                                <input
+                                  type="text"
+                                  defaultValue={o.name}
+                                  className="w-full px-3 py-2 border rounded-lg"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">
+                                  Gender
+                                </label>
+                                <select
+                                  defaultValue={o.gender}
+                                  className="w-full px-3 py-2 border rounded-lg"
+                                >
+                                  <option>Male</option>
+                                  <option>Female</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">
+                                  Email
+                                </label>
+                                <input
+                                  type="email"
+                                  defaultValue={o.email}
+                                  className="w-full px-3 py-2 border rounded-lg"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">
+                                  Phone
+                                </label>
+                                <input
+                                  type="text"
+                                  defaultValue={o.phone}
+                                  className="w-full px-3 py-2 border rounded-lg"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">
+                                  Address
+                                </label>
+                                <textarea
+                                  defaultValue={o.address}
+                                  className="w-full px-3 py-2 border rounded-lg"
+                                  rows="3"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <DialogTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                                >
+                                  Cancel
+                                </button>
+                              </DialogTrigger>
+                              <button
+                                type="submit"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                              >
+                                Save Changes
+                              </button>
+                            </div>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
+
+                      {/* DELETE USER */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button className="p-2 hover:bg-gray-100 rounded">
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete user {o.id} ({o.name})?
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                // Handle delete logic here
+                                console.log("Deleting user:", o.id);
+                              }}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
+      </div>
 
-        {/* Bulk action toolbar */}
-        {selected.length > 0 && (
-          <div className="absolute left-1/2 transform -translate-x-1/2 -bottom-14 bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-4 whitespace-nowrap">
-            <div className="text-sm font-medium text-gray-900">
-              {selected.length} Selected
-            </div>
-            <button className="px-3 py-1 border border-gray-200 rounded-md text-sm hover:bg-gray-50">
+      {/* Bulk action toolbar */}
+      {selected.length > 0 && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-4">
+          <span className="font-medium">{selected.length} Selected</span>
+          <div className="flex gap-2">
+            <button className="px-4 py-2 bg-gray-800 rounded hover:bg-gray-700">
+              <FileText className="w-4 h-4 inline mr-2" />
               Duplicate
             </button>
-            <button className="px-3 py-1 border border-gray-200 rounded-md text-sm hover:bg-gray-50">
+            <button className="px-4 py-2 bg-gray-800 rounded hover:bg-gray-700">
+              <Download className="w-4 h-4 inline mr-2" />
               Print
             </button>
-            <button className="px-3 py-1 border border-red-200 rounded-md text-sm text-red-600 hover:bg-red-50">
+            <button className="px-4 py-2 bg-red-600 rounded hover:bg-red-700">
+              <Trash2 className="w-4 h-4 inline mr-2" />
               Delete
             </button>
-            <button className="text-gray-400 hover:text-gray-600">✕</button>
           </div>
-        )}
+          <button
+            onClick={() => setSelected([])}
+            className="ml-4 text-gray-400 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
-        {/* Footer with pagination */}
-        <div className="flex items-center justify-between px-6 py-4 text-sm text-gray-600 border-t border-gray-200">
-          <div>
-            Showing <span className="font-semibold text-gray-900">1-9</span> of{" "}
-            <span className="font-semibold text-gray-900">240</span> entries
+      {/* Footer with pagination */}
+      <div className="mt-6 flex items-center justify-between">
+        <p className="text-sm text-gray-600">
+          Showing {startIndex + 1}-{Math.min(endIndex, orders.length)} of{" "}
+          <span className="font-semibold">{orders.length}</span> entries
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </button>
+          <div className="flex gap-1">
+            {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              
+              return (
+                <button
+                  key={i}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`w-10 h-10 rounded-lg ${
+                    currentPage === pageNum
+                      ? "bg-blue-600 text-white"
+                      : "border hover:bg-gray-50"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            {totalPages > 5 && currentPage < totalPages - 2 && (
+              <>
+                <span className="px-2 py-2">...</span>
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  className="w-10 h-10 rounded-lg border hover:bg-gray-50"
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <button className="px-3 py-1 border border-gray-200 rounded-md hover:bg-gray-50 flex items-center gap-1">
-              <ChevronLeft size={16} />
-              Previous
-            </button>
-            <div className="flex items-center gap-1">
-              <button className="w-8 h-8 rounded-full bg-blue-600 text-white font-medium">
-                1
-              </button>
-              <button className="w-8 h-8 border border-gray-200 rounded-full hover:bg-gray-50">
-                2
-              </button>
-              <button className="w-8 h-8 border border-gray-200 rounded-full hover:bg-gray-50">
-                3
-              </button>
-              <span className="px-2 text-gray-400">...</span>
-              <button className="w-8 h-8 border border-gray-200 rounded-full hover:bg-gray-50">
-                12
-              </button>
-            </div>
-            <button className="px-3 py-1 border border-gray-200 rounded-md hover:bg-gray-50 flex items-center gap-1">
-              Next
-              <ChevronRight size={16} />
-            </button>
-          </div>
+          <button
+            onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
