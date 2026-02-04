@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
+  UserCog,
   FileText,
   Clock,
   Goal,
@@ -52,6 +53,11 @@ export default function Sidebar() {
             <NavLink to="/users" className={linkClass}>
               <Users size={18} />
               <span>User Management</span>
+            </NavLink>
+
+            <NavLink to="/management" className={linkClass}>
+              <UserCog size={18} />
+              <span>Management</span>
             </NavLink>
 
             <NavLink to="/transaction" className={linkClass}>
