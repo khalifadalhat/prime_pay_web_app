@@ -1,23 +1,21 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 
 // Async thunk for fetching users
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch('https://randomuser.me/api/?results=50');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
+      const response = await axios.get('https://randomuser.me/api/', {
+        params: { results: 50 },
+      });
+      const data = response.data;
+
       // Transform the API data
       const transformedUsers = data.results.map((user, index) => {
         const userNum = 1000 + index;
         const fullAddress = `${user.location.street.number} ${user.location.street.name}, ${user.location.city}, ${user.location.state}, ${user.location.country}`;
-        
+
         return {
           id: `#USR${userNum}`,
           gender: user.gender.charAt(0).toUpperCase() + user.gender.slice(1),
@@ -30,12 +28,12 @@ export const fetchUsers = createAsyncThunk(
           registeredDate: new Date(user.registered.date).toLocaleDateString('en-US', {
             day: '2-digit',
             month: 'short',
-            year: 'numeric'
+            year: 'numeric',
           }),
           picture: user.picture.thumbnail,
         };
       });
-      
+
       return transformedUsers;
     } catch (error) {
       console.error('Fetch users error:', error);
@@ -54,7 +52,7 @@ export const deleteUser = createAsyncThunk(
       //   method: 'DELETE' 
       // });
       // if (!response.ok) throw new Error('Delete failed');
-      
+
       // For now, just return the userId to remove it from state
       return userId;
     } catch (error) {
@@ -77,7 +75,7 @@ export const updateUser = createAsyncThunk(
       // });
       // if (!response.ok) throw new Error('Update failed');
       // const updatedUser = await response.json();
-      
+
       // For now, just return the updated user data
       return userData;
     } catch (error) {
@@ -107,23 +105,23 @@ const usersSlice = createSlice({
         state.selectedUsers.push(userId);
       }
     },
-    
+
     // Select all users (pass array of user IDs)
     setSelectedUsers: (state, action) => {
       state.selectedUsers = action.payload;
     },
-    
+
     // Clear all selections
     clearSelection: (state) => {
       state.selectedUsers = [];
     },
-    
+
     // Set current page
     setCurrentPage: (state, action) => {
       state.currentPage = action.payload;
       state.selectedUsers = []; // Clear selection when changing pages
     },
-    
+
     // Clear error
     clearError: (state) => {
       state.error = null;
@@ -145,7 +143,7 @@ const usersSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to fetch users';
       })
-      
+
       // Delete user cases
       .addCase(deleteUser.pending, (state) => {
         state.error = null;
@@ -157,7 +155,7 @@ const usersSlice = createSlice({
       .addCase(deleteUser.rejected, (state, action) => {
         state.error = action.payload || 'Failed to delete user';
       })
-      
+
       // Update user cases
       .addCase(updateUser.pending, (state) => {
         state.error = null;
@@ -175,10 +173,10 @@ const usersSlice = createSlice({
 });
 
 // Export actions
-export const { 
-  toggleUserSelection, 
-  setSelectedUsers, 
-  clearSelection, 
+export const {
+  toggleUserSelection,
+  setSelectedUsers,
+  clearSelection,
   setCurrentPage,
   clearError,
 } = usersSlice.actions;
@@ -196,10 +194,10 @@ export const selectPaginatedUsers = (state) => {
   const users = selectAllUsers(state);
   const currentPage = selectCurrentPage(state);
   const itemsPerPage = selectItemsPerPage(state);
-  
+
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  
+
   return users.slice(startIndex, endIndex);
 };
 
@@ -212,15 +210,15 @@ export const selectTotalPages = (state) => {
 export const selectUserStats = (state) => {
   const users = selectAllUsers(state);
   const now = new Date();
-  
+
   return {
     totalUsers: users.length,
     maleUsers: users.filter(u => u.gender === 'Male').length,
     femaleUsers: users.filter(u => u.gender === 'Female').length,
     registeredThisMonth: users.filter(u => {
       const regDate = new Date(u.registeredDate);
-      return regDate.getMonth() === now.getMonth() && 
-             regDate.getFullYear() === now.getFullYear();
+      return regDate.getMonth() === now.getMonth() &&
+        regDate.getFullYear() === now.getFullYear();
     }).length,
   };
 };
@@ -230,10 +228,10 @@ export const selectPaginationInfo = (state) => {
   const currentPage = selectCurrentPage(state);
   const itemsPerPage = selectItemsPerPage(state);
   const totalPages = selectTotalPages(state);
-  
+
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  
+
   return {
     startIndex: startIndex + 1,
     endIndex: Math.min(endIndex, users.length),
