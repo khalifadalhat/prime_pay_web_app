@@ -1,5 +1,6 @@
-import { Plus, Download, Edit2, Trash2, ChevronsUpDown, Clock, FileText, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Plus, Download, Edit2, Trash2, Clock, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Dialog,
   DialogContent,
@@ -18,64 +19,106 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  fetchUsers,
+  deleteUser,
+  updateUser,
+  toggleUserSelection,
+  setSelectedUsers,
+  clearSelection,
+  setCurrentPage,
+  selectPaginatedUsers,
+  selectUsersLoading,
+  selectUsersError,
+  selectSelectedUsers,
+  selectCurrentPage,
+  selectTotalPages,
+  selectUserStats,
+  selectPaginationInfo,
+} from "../store/slices/usersSlice";
 
 export default function Users() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selected, setSelected] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const dispatch = useDispatch();
+  
+  // Select data from Redux store using selectors
+  const currentOrders = useSelector(selectPaginatedUsers);
+  const loading = useSelector(selectUsersLoading);
+  const error = useSelector(selectUsersError);
+  const selected = useSelector(selectSelectedUsers);
+  const currentPage = useSelector(selectCurrentPage);
+  const totalPages = useSelector(selectTotalPages);
+  const stats = useSelector(selectUserStats);
+  const paginationInfo = useSelector(selectPaginationInfo);
 
-  // Fetch data from RandomUser API
+  // Local state for edit dialog
+  const [editingUser, setEditingUser] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Fetch users on component mount
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('https://randomuser.me/api/?results=50');
-        const data = await response.json();
-        
-        // Transform the API data to include gender, name, email, and address
-        const transformedOrders = data.results.map((user, index) => {
-          const userNum = 1000 + index;
-          const fullAddress = `${user.location.street.number} ${user.location.street.name}, ${user.location.city}, ${user.location.state}, ${user.location.country}`;
-          
-          return {
-            id: `#USR${userNum}`,
-            gender: user.gender.charAt(0).toUpperCase() + user.gender.slice(1),
-            name: `${user.name.first} ${user.name.last}`,
-            email: user.email,
-            address: fullAddress,
-            city: user.location.city,
-            country: user.location.country,
-            phone: user.phone,
-            registeredDate: new Date(user.registered.date).toLocaleDateString('en-US', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric'
-            }),
-            picture: user.picture.thumbnail,
-          };
-        });
-        
-        setOrders(transformedOrders);
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to fetch orders');
-        setLoading(false);
-        console.error('Error fetching users:', err);
-      }
-    };
+    dispatch(fetchUsers());
+  }, [dispatch]);
 
-    fetchUsers();
-  }, []);
-
+  // Toggle individual user selection
   const toggle = (id) => {
-    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+    dispatch(toggleUserSelection(id));
   };
 
-  const allSelected = selected.length === orders.length && orders.length > 0;
+  // Check if all users on current page are selected
+  const allSelected = selected.length === currentOrders.length && currentOrders.length > 0;
 
+  // Handle select all checkbox
+  const handleSelectAll = () => {
+    if (allSelected) {
+      dispatch(clearSelection());
+    } else {
+      dispatch(setSelectedUsers(currentOrders.map((o) => o.id)));
+    }
+  };
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    dispatch(setCurrentPage(page));
+  };
+
+  // Handle delete user
+  const handleDelete = (userId) => {
+    dispatch(deleteUser(userId));
+  };
+
+  // Handle bulk delete
+  const handleBulkDelete = () => {
+    selected.forEach(userId => {
+      dispatch(deleteUser(userId));
+    });
+  };
+
+  // Handle edit user
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle save edited user
+  const handleSaveUser = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    const updatedUser = {
+      ...editingUser,
+      name: formData.get('name'),
+      gender: formData.get('gender'),
+      email: formData.get('email'),
+      phone: formData.get('phone'),
+      address: formData.get('address'),
+    };
+    
+    dispatch(updateUser(updatedUser));
+    setIsEditDialogOpen(false);
+    setEditingUser(null);
+  };
+
+  // Get user initials for avatar
   const getInitials = (name) => {
     return name
       .split(" ")
@@ -85,27 +128,12 @@ export default function Users() {
       .toUpperCase();
   };
 
-  // Calculate statistics
-  const totalUsers = orders.length;
-  const maleUsers = orders.filter(o => o.gender === 'Male').length;
-  const femaleUsers = orders.filter(o => o.gender === 'Female').length;
-  const registeredThisMonth = orders.filter(o => {
-    const regDate = new Date(o.registeredDate);
-    const now = new Date();
-    return regDate.getMonth() === now.getMonth() && regDate.getFullYear() === now.getFullYear();
-  }).length;
-
-  // Pagination
-  const totalPages = Math.ceil(orders.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentOrders = orders.slice(startIndex, endIndex);
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    setSelected([]); // Clear selection when changing pages
+  // Handle retry on error
+  const handleRetry = () => {
+    dispatch(fetchUsers());
   };
 
+  // Loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -117,12 +145,19 @@ export default function Users() {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center text-red-600">
           <p className="text-xl font-semibold mb-2">Error</p>
-          <p>{error}</p>
+          <p className="mb-4">{error}</p>
+          <button
+            onClick={handleRetry}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -153,19 +188,19 @@ export default function Users() {
       <div className="grid grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
           <p className="text-sm text-gray-600 mb-1">Total Users</p>
-          <p className="text-3xl font-bold text-gray-900">{totalUsers}</p>
+          <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
           <p className="text-sm text-gray-600 mb-1">Male Users</p>
-          <p className="text-3xl font-bold text-gray-900">{maleUsers}</p>
+          <p className="text-3xl font-bold text-gray-900">{stats.maleUsers}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-pink-500">
           <p className="text-sm text-gray-600 mb-1">Female Users</p>
-          <p className="text-3xl font-bold text-gray-900">{femaleUsers}</p>
+          <p className="text-3xl font-bold text-gray-900">{stats.femaleUsers}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
           <p className="text-sm text-gray-600 mb-1">Registered This Month</p>
-          <p className="text-3xl font-bold text-gray-900">{registeredThisMonth}</p>
+          <p className="text-3xl font-bold text-gray-900">{stats.registeredThisMonth}</p>
         </div>
       </div>
 
@@ -194,9 +229,7 @@ export default function Users() {
                 <input
                   type="checkbox"
                   checked={allSelected}
-                  onChange={() =>
-                    allSelected ? setSelected([]) : setSelected(currentOrders.map((o) => o.id))
-                  }
+                  onChange={handleSelectAll}
                   className="w-4 h-4 rounded"
                 />
               </th>
@@ -275,106 +308,12 @@ export default function Users() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       {/* EDIT USER */}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <button className="p-2 hover:bg-gray-100 rounded">
-                            <Edit2 className="w-4 h-4 text-gray-600" />
-                          </button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Edit User</DialogTitle>
-                          </DialogHeader>
-                          <form
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              // Handle save logic here
-                            }}
-                          >
-                            <div className="space-y-4 py-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  User ID
-                                </label>
-                                <input
-                                  type="text"
-                                  defaultValue={o.id}
-                                  className="w-full px-3 py-2 border rounded-lg"
-                                  disabled
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Name
-                                </label>
-                                <input
-                                  type="text"
-                                  defaultValue={o.name}
-                                  className="w-full px-3 py-2 border rounded-lg"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Gender
-                                </label>
-                                <select
-                                  defaultValue={o.gender}
-                                  className="w-full px-3 py-2 border rounded-lg"
-                                >
-                                  <option>Male</option>
-                                  <option>Female</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Email
-                                </label>
-                                <input
-                                  type="email"
-                                  defaultValue={o.email}
-                                  className="w-full px-3 py-2 border rounded-lg"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Phone
-                                </label>
-                                <input
-                                  type="text"
-                                  defaultValue={o.phone}
-                                  className="w-full px-3 py-2 border rounded-lg"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Address
-                                </label>
-                                <textarea
-                                  defaultValue={o.address}
-                                  className="w-full px-3 py-2 border rounded-lg"
-                                  rows="3"
-                                />
-                              </div>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                              <DialogTrigger asChild>
-                                <button
-                                  type="button"
-                                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-                                >
-                                  Cancel
-                                </button>
-                              </DialogTrigger>
-                              <button
-                                type="submit"
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                              >
-                                Save Changes
-                              </button>
-                            </div>
-                          </form>
-                        </DialogContent>
-                      </Dialog>
+                      <button 
+                        onClick={() => handleEditUser(o)}
+                        className="p-2 hover:bg-gray-100 rounded"
+                      >
+                        <Edit2 className="w-4 h-4 text-gray-600" />
+                      </button>
 
                       {/* DELETE USER */}
                       <AlertDialog>
@@ -394,10 +333,7 @@ export default function Users() {
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => {
-                                // Handle delete logic here
-                                console.log("Deleting user:", o.id);
-                              }}
+                              onClick={() => handleDelete(o.id)}
                               className="bg-red-600 hover:bg-red-700"
                             >
                               Delete
@@ -414,6 +350,106 @@ export default function Users() {
         </table>
       </div>
 
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          {editingUser && (
+            <form onSubmit={handleSaveUser}>
+              <div className="space-y-4 py-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    User ID
+                  </label>
+                  <input
+                    type="text"
+                    defaultValue={editingUser.id}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    disabled
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    defaultValue={editingUser.name}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Gender
+                  </label>
+                  <select
+                    name="gender"
+                    defaultValue={editingUser.gender}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option>Male</option>
+                    <option>Female</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    defaultValue={editingUser.email}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="text"
+                    name="phone"
+                    defaultValue={editingUser.phone}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Address
+                  </label>
+                  <textarea
+                    name="address"
+                    defaultValue={editingUser.address}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    rows="3"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditDialogOpen(false)}
+                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Bulk action toolbar */}
       {selected.length > 0 && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-4">
@@ -427,13 +463,16 @@ export default function Users() {
               <Download className="w-4 h-4 inline mr-2" />
               Print
             </button>
-            <button className="px-4 py-2 bg-red-600 rounded hover:bg-red-700">
+            <button 
+              onClick={handleBulkDelete}
+              className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
+            >
               <Trash2 className="w-4 h-4 inline mr-2" />
               Delete
             </button>
           </div>
           <button
-            onClick={() => setSelected([])}
+            onClick={() => dispatch(clearSelection())}
             className="ml-4 text-gray-400 hover:text-white"
           >
             ✕
@@ -444,8 +483,8 @@ export default function Users() {
       {/* Footer with pagination */}
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm text-gray-600">
-          Showing {startIndex + 1}-{Math.min(endIndex, orders.length)} of{" "}
-          <span className="font-semibold">{orders.length}</span> entries
+          Showing {paginationInfo.startIndex}-{paginationInfo.endIndex} of{" "}
+          <span className="font-semibold">{paginationInfo.totalItems}</span> entries
         </p>
         <div className="flex items-center gap-2">
           <button
