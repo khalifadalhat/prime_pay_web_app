@@ -20,13 +20,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  fetchMovies,
-  createMovie,
-  updateMovie,
-  deleteMovie,
+  loadMovies,
+  addMovie,
+  editMovie,
+  removeMovie,
   toggleMovieSelection,
   setSelectedMovies,
-  clearMovieSelection,
   setMovieCurrentPage,
   selectPaginatedMovies,
   selectMoviesLoading,
@@ -36,7 +35,7 @@ import {
   selectMovieTotalPages,
   selectMovieStats,
   selectMoviePaginationInfo,
-} from "../store/slices/movieSlice";
+} from "../store/slices/managementSlice";
 
 export default function Management() {
   const dispatch = useDispatch();
@@ -55,10 +54,17 @@ export default function Management() {
   const [editingMovie, setEditingMovie] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({ title: '', year: '', rating: '' });
+  const [editingId, setEditingId] = useState(null);
+
+  const clearForm = () => {
+    setFormData({ title: '', year: '', rating: '' });
+    setEditingId(null);
+  };
 
   // Fetch movies on component mount
   useEffect(() => {
-    dispatch(fetchMovies());
+    dispatch(loadMovies());
   }, [dispatch]);
 
   // Toggle individual movie selection
@@ -86,24 +92,26 @@ export default function Management() {
   // Handle add movie
   const handleAddMovie = (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    
+    if (!formData.title.trim()) {
+      alert('Please enter a title');
+      return;
+    }
     const newMovie = {
-      title: formData.get('title'),
-      plot: formData.get('plot'),
-      genres: formData.get('genres').split(',').map(g => g.trim()),
-      year: parseInt(formData.get('year')),
-      runtime: parseInt(formData.get('runtime')),
-      directors: formData.get('directors').split(',').map(d => d.trim()),
-      cast: formData.get('cast').split(',').map(c => c.trim()),
+      title: formData.title,
+      plot: formData.plot,
+      genres: formData.genres.split(',').map(g => g.trim()),
+      year: parseInt(formData.year),
+      runtime: parseInt(formData.runtime),
+      directors: formData.directors.split(',').map(d => d.trim()),
+      cast: formData.cast.split(',').map(c => c.trim()),
       imdb: {
-        rating: parseFloat(formData.get('rating')) || 0,
+        rating: parseFloat(formData.rating) || 0,
       },
     };
     
-    dispatch(createMovie(newMovie));
+    dispatch(addMovie(newMovie));
     setIsAddDialogOpen(false);
-    e.target.reset();
+    setFormData({ title: '', year: '', rating: '' });
   };
 
   // Handle edit movie
@@ -115,41 +123,40 @@ export default function Management() {
   // Handle save edited movie
   const handleSaveMovie = (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    
     const updatedMovie = {
-      title: formData.get('title'),
-      plot: formData.get('plot'),
-      genres: formData.get('genres').split(',').map(g => g.trim()),
-      year: parseInt(formData.get('year')),
-      runtime: parseInt(formData.get('runtime')),
-      directors: formData.get('directors').split(',').map(d => d.trim()),
-      cast: formData.get('cast').split(',').map(c => c.trim()),
+      title: formData.title,
+      plot: formData.plot,
+      genres: formData.genres.split(',').map(g => g.trim()),
+      year: parseInt(formData.year),
+      runtime: parseInt(formData.runtime),
+      directors: formData.directors.split(',').map(d => d.trim()),
+      cast: formData.cast.split(',').map(c => c.trim()),
       imdb: {
-        rating: parseFloat(formData.get('rating')) || editingMovie.imdb?.rating || 0,
+        rating: parseFloat(formData.rating) || editingMovie.imdb?.rating || 0,
       },
     };
     
-    dispatch(updateMovie({ id: editingMovie._id, movieData: updatedMovie }));
+    dispatch(editMovie({ id: editingMovie._id, data: updatedMovie }));
     setIsEditDialogOpen(false);
     setEditingMovie(null);
+    setFormData({ title: '', year: '', rating: '' });
   };
 
   // Handle delete movie
   const handleDelete = (movieId) => {
-    dispatch(deleteMovie(movieId));
+    dispatch(removeMovie(movieId));
   };
 
   // Handle bulk delete
   const handleBulkDelete = () => {
     selected.forEach(movieId => {
-      dispatch(deleteMovie(movieId));
+      dispatch(removeMovie(movieId));
     });
   };
 
   // Handle retry on error
   const handleRetry = () => {
-    dispatch(fetchMovies());
+    dispatch(loadMovies());
   };
 
   // Loading state
@@ -219,6 +226,8 @@ export default function Management() {
                       required
                       className="w-full px-3 py-2 border rounded-lg"
                       placeholder="The Shawshank Redemption"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     />
                   </div>
                   <div>
@@ -229,6 +238,8 @@ export default function Management() {
                       className="w-full px-3 py-2 border rounded-lg"
                       rows="3"
                       placeholder="Enter movie plot..."
+                      value={formData.plot}
+                      onChange={(e) => setFormData({ ...formData, plot: e.target.value })}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -242,6 +253,8 @@ export default function Management() {
                         placeholder="1994"
                         min="1900"
                         max="2100"
+                        value={formData.year}
+                        onChange={(e) => setFormData({ ...formData, year: e.target.value })}
                       />
                     </div>
                     <div>
@@ -253,6 +266,8 @@ export default function Management() {
                         className="w-full px-3 py-2 border rounded-lg"
                         placeholder="142"
                         min="1"
+                        value={formData.runtime}
+                        onChange={(e) => setFormData({ ...formData, runtime: e.target.value })}
                       />
                     </div>
                   </div>
@@ -264,6 +279,8 @@ export default function Management() {
                       required
                       className="w-full px-3 py-2 border rounded-lg"
                       placeholder="Drama, Crime"
+                      value={formData.genres}
+                      onChange={(e) => setFormData({ ...formData, genres: e.target.value })}
                     />
                   </div>
                   <div>
@@ -274,6 +291,8 @@ export default function Management() {
                       required
                       className="w-full px-3 py-2 border rounded-lg"
                       placeholder="Frank Darabont"
+                      value={formData.directors}
+                      onChange={(e) => setFormData({ ...formData, directors: e.target.value })}
                     />
                   </div>
                   <div>
@@ -284,6 +303,8 @@ export default function Management() {
                       required
                       className="w-full px-3 py-2 border rounded-lg"
                       placeholder="Tim Robbins, Morgan Freeman"
+                      value={formData.cast}
+                      onChange={(e) => setFormData({ ...formData, cast: e.target.value })}
                     />
                   </div>
                   <div>
@@ -296,6 +317,8 @@ export default function Management() {
                       max="10"
                       className="w-full px-3 py-2 border rounded-lg"
                       placeholder="9.3"
+                      value={formData.rating}
+                      onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
                     />
                   </div>
                 </div>

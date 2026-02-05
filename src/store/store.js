@@ -1,12 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
 import usersReducer from './slices/usersSlice';
-import moviesReducer from './slices/movieSlice';
+import managementReducer from './slices/managementSlice';
 
 export const store = configureStore({
   reducer: {
     users: usersReducer,
-    movies: moviesReducer,
-
+    management: managementReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
