@@ -51,6 +51,7 @@ export default function Management() {
   const [editingMovie, setEditingMovie] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("All");
   const [formData, setFormData] = useState({ title: '', year: '', rating: '', plot: '', genres: '', directors: '', cast: '', runtime: '' });
 
   const pageSize = 10;
@@ -67,8 +68,29 @@ export default function Management() {
   }, [allMovies]);
 
   // Pagination
-  const totalPages = Math.max(1, Math.ceil(localMovies.length / pageSize));
-  const currentMovies = localMovies.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  // Filter movies based on active tab
+  const getFilteredMovies = () => {
+    const currentYear = new Date().getFullYear();
+    switch (activeTab) {
+      case "Recent":
+        return localMovies.filter((m) => m.year >= currentYear - 5);
+      case "High Rated":
+        return localMovies.filter((m) => m.imdb?.rating >= 7);
+      case "Classics":
+        return localMovies.filter((m) => m.year < 2000);
+      case "Action":
+        return localMovies.filter((m) => 
+          m.genres?.some(g => g.toLowerCase().includes("action"))
+        );
+      case "All":
+      default:
+        return localMovies;
+    }
+  };
+
+  const filteredMovies = getFilteredMovies();
+  const totalPages = Math.max(1, Math.ceil(filteredMovies.length / pageSize));
+  const currentMovies = filteredMovies.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Stats
   const stats = {
@@ -81,7 +103,7 @@ export default function Management() {
   const paginationInfo = {
     startIndex: (currentPage - 1) * pageSize + 1,
     endIndex: Math.min(currentPage * pageSize, localMovies.length),
-    totalItems: localMovies.length,
+    totalItems: filteredMovies.length,
   };
 
   // Handlers
@@ -393,16 +415,20 @@ export default function Management() {
 
       {/* Tabs */}
       <div className="mb-6 flex gap-1 border-b">
-        {["All", "Recent", "High Rated", "Classics", "Action"].map((t) => (
+        {["All", "Recent", "High Rated", "Classics", "Action"].map((tab) => (
           <button
-            key={t}
+            key={tab}
+            onClick={() => {
+              setActiveTab(tab);
+              dispatch(setMovieCurrentPage(1));
+            }}
             className={`px-4 py-2 font-medium ${
-              t === "All"
+              activeTab === tab
                 ? "text-blue-600 border-b-2 border-blue-600"
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            {t}
+            {tab}
           </button>
         ))}
       </div>
@@ -692,7 +718,7 @@ export default function Management() {
       {/* Footer with pagination */}
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm text-gray-600">
-          Showing {paginationInfo.startIndex}-{paginationInfo.endIndex} of{" "}
+          Showing {filteredMovies.length === 0 ? 0 : paginationInfo.startIndex}-{paginationInfo.endIndex} of{" "}
           <span className="font-semibold">{paginationInfo.totalItems}</span> entries
         </p>
         <div className="flex items-center gap-2">
