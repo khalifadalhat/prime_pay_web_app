@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,9 +22,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   loadMovies,
-  addMovie,
-  editMovie,
-  removeMovie,
   toggleMovieSelection,
   setSelectedMovies,
   setMovieCurrentPage,
@@ -35,47 +33,64 @@ import {
   selectMovieTotalPages,
   selectMovieStats,
   selectMoviePaginationInfo,
+  clearMovieSelection,
 } from "../store/slices/managementSlice";
 
 export default function Management() {
   const dispatch = useDispatch();
   
-  // Select data from Redux store using selectors
-  const currentMovies = useSelector(selectPaginatedMovies);
+  // Select data from Redux store
+  const allMovies = useSelector((state) => state.management.movies);
   const loading = useSelector(selectMoviesLoading);
   const error = useSelector(selectMoviesError);
   const selected = useSelector(selectSelectedMovies);
   const currentPage = useSelector(selectMovieCurrentPage);
-  const totalPages = useSelector(selectMovieTotalPages);
-  const stats = useSelector(selectMovieStats);
-  const paginationInfo = useSelector(selectMoviePaginationInfo);
 
-  // Local state for dialogs
+  // Local state for movies (to add/edit/delete locally without API)
+  const [localMovies, setLocalMovies] = useState([]);
   const [editingMovie, setEditingMovie] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({ title: '', year: '', rating: '' });
-  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState({ title: '', year: '', rating: '', plot: '', genres: '', directors: '', cast: '', runtime: '' });
 
-  const clearForm = () => {
-    setFormData({ title: '', year: '', rating: '' });
-    setEditingId(null);
-  };
+  const pageSize = 10;
 
-  // Fetch movies on component mount
+  // Initialize localMovies from Redux on mount
   useEffect(() => {
     dispatch(loadMovies());
   }, [dispatch]);
 
-  // Toggle individual movie selection
+  useEffect(() => {
+    if (Array.isArray(allMovies)) {
+      setLocalMovies(allMovies);
+    }
+  }, [allMovies]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(localMovies.length / pageSize));
+  const currentMovies = localMovies.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Stats
+  const stats = {
+    totalMovies: localMovies.length,
+    recentMovies: localMovies.filter((m) => m.year >= new Date().getFullYear() - 5).length,
+    highRated: localMovies.filter((m) => m.imdb?.rating >= 7).length,
+    totalGenres: new Set(localMovies.flatMap((m) => m.genres || [])).size,
+  };
+
+  const paginationInfo = {
+    startIndex: (currentPage - 1) * pageSize + 1,
+    endIndex: Math.min(currentPage * pageSize, localMovies.length),
+    totalItems: localMovies.length,
+  };
+
+  // Handlers
   const toggle = (id) => {
     dispatch(toggleMovieSelection(id));
   };
 
-  // Check if all movies on current page are selected
   const allSelected = selected.length === currentMovies.length && currentMovies.length > 0;
 
-  // Handle select all checkbox
   const handleSelectAll = () => {
     if (allSelected) {
       dispatch(clearMovieSelection());
@@ -84,83 +99,93 @@ export default function Management() {
     }
   };
 
-  // Handle page change
   const handlePageChange = (page) => {
     dispatch(setMovieCurrentPage(page));
   };
 
-  // Handle add movie
   const handleAddMovie = (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
+    if (!formData.title?.trim()) {
       alert('Please enter a title');
       return;
     }
+
     const newMovie = {
+      _id: `temp_${Date.now()}`, // temporary ID
       title: formData.title,
       plot: formData.plot,
-      genres: formData.genres.split(',').map(g => g.trim()),
-      year: parseInt(formData.year),
-      runtime: parseInt(formData.runtime),
-      directors: formData.directors.split(',').map(d => d.trim()),
-      cast: formData.cast.split(',').map(c => c.trim()),
+      genres: formData.genres.split(',').map(g => g.trim()).filter(Boolean),
+      year: parseInt(formData.year) || new Date().getFullYear(),
+      runtime: parseInt(formData.runtime) || 0,
+      directors: formData.directors.split(',').map(d => d.trim()).filter(Boolean),
+      cast: formData.cast.split(',').map(c => c.trim()).filter(Boolean),
       imdb: {
         rating: parseFloat(formData.rating) || 0,
       },
     };
-    
-    dispatch(addMovie(newMovie));
+
+    setLocalMovies([newMovie, ...localMovies]);
     setIsAddDialogOpen(false);
-    setFormData({ title: '', year: '', rating: '' });
+    setFormData({ title: '', year: '', rating: '', plot: '', genres: '', directors: '', cast: '', runtime: '' });
   };
 
-  // Handle edit movie
   const handleEditMovie = (movie) => {
     setEditingMovie(movie);
+    setFormData({
+      title: movie.title || '',
+      plot: movie.plot || '',
+      year: movie.year || '',
+      runtime: movie.runtime || '',
+      genres: movie.genres?.join(', ') || '',
+      directors: movie.directors?.join(', ') || '',
+      cast: movie.cast?.join(', ') || '',
+      rating: movie.imdb?.rating || '',
+    });
     setIsEditDialogOpen(true);
   };
 
-  // Handle save edited movie
   const handleSaveMovie = (e) => {
     e.preventDefault();
+    if (!formData.title?.trim()) {
+      alert('Please enter a title');
+      return;
+    }
+
     const updatedMovie = {
+      ...editingMovie,
       title: formData.title,
       plot: formData.plot,
-      genres: formData.genres.split(',').map(g => g.trim()),
+      genres: formData.genres.split(',').map(g => g.trim()).filter(Boolean),
       year: parseInt(formData.year),
       runtime: parseInt(formData.runtime),
-      directors: formData.directors.split(',').map(d => d.trim()),
-      cast: formData.cast.split(',').map(c => c.trim()),
+      directors: formData.directors.split(',').map(d => d.trim()).filter(Boolean),
+      cast: formData.cast.split(',').map(c => c.trim()).filter(Boolean),
       imdb: {
-        rating: parseFloat(formData.rating) || editingMovie.imdb?.rating || 0,
+        rating: parseFloat(formData.rating) || 0,
       },
     };
-    
-    dispatch(editMovie({ id: editingMovie._id, data: updatedMovie }));
+
+    setLocalMovies(localMovies.map((m) => (m._id === editingMovie._id ? updatedMovie : m)));
     setIsEditDialogOpen(false);
     setEditingMovie(null);
-    setFormData({ title: '', year: '', rating: '' });
+    setFormData({ title: '', year: '', rating: '', plot: '', genres: '', directors: '', cast: '', runtime: '' });
   };
 
-  // Handle delete movie
   const handleDelete = (movieId) => {
-    dispatch(removeMovie(movieId));
+    setLocalMovies(localMovies.filter((m) => m._id !== movieId));
   };
 
-  // Handle bulk delete
   const handleBulkDelete = () => {
-    selected.forEach(movieId => {
-      dispatch(removeMovie(movieId));
-    });
+    setLocalMovies(localMovies.filter((m) => !selected.includes(m._id)));
+    dispatch(clearMovieSelection());
   };
 
-  // Handle retry on error
   const handleRetry = () => {
     dispatch(loadMovies());
   };
 
   // Loading state
-  if (loading && currentMovies.length === 0) {
+  if (loading && localMovies.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -172,7 +197,7 @@ export default function Management() {
   }
 
   // Error state
-  if (error && currentMovies.length === 0) {
+  if (error && localMovies.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center text-red-600">
@@ -226,7 +251,7 @@ export default function Management() {
                       required
                       className="w-full px-3 py-2 border rounded-lg"
                       placeholder="The Shawshank Redemption"
-                      value={formData.title}
+                      value={formData.title || ''}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     />
                   </div>
@@ -238,7 +263,7 @@ export default function Management() {
                       className="w-full px-3 py-2 border rounded-lg"
                       rows="3"
                       placeholder="Enter movie plot..."
-                      value={formData.plot}
+                      value={formData.plot || ''}
                       onChange={(e) => setFormData({ ...formData, plot: e.target.value })}
                     />
                   </div>
@@ -253,7 +278,7 @@ export default function Management() {
                         placeholder="1994"
                         min="1900"
                         max="2100"
-                        value={formData.year}
+                        value={formData.year || ''}
                         onChange={(e) => setFormData({ ...formData, year: e.target.value })}
                       />
                     </div>
@@ -266,7 +291,7 @@ export default function Management() {
                         className="w-full px-3 py-2 border rounded-lg"
                         placeholder="142"
                         min="1"
-                        value={formData.runtime}
+                        value={formData.runtime || ''}
                         onChange={(e) => setFormData({ ...formData, runtime: e.target.value })}
                       />
                     </div>
@@ -279,7 +304,7 @@ export default function Management() {
                       required
                       className="w-full px-3 py-2 border rounded-lg"
                       placeholder="Drama, Crime"
-                      value={formData.genres}
+                      value={formData.genres || ''}
                       onChange={(e) => setFormData({ ...formData, genres: e.target.value })}
                     />
                   </div>
@@ -291,7 +316,7 @@ export default function Management() {
                       required
                       className="w-full px-3 py-2 border rounded-lg"
                       placeholder="Frank Darabont"
-                      value={formData.directors}
+                      value={formData.directors || ''}
                       onChange={(e) => setFormData({ ...formData, directors: e.target.value })}
                     />
                   </div>
@@ -303,7 +328,7 @@ export default function Management() {
                       required
                       className="w-full px-3 py-2 border rounded-lg"
                       placeholder="Tim Robbins, Morgan Freeman"
-                      value={formData.cast}
+                      value={formData.cast || ''}
                       onChange={(e) => setFormData({ ...formData, cast: e.target.value })}
                     />
                   </div>
@@ -317,7 +342,7 @@ export default function Management() {
                       max="10"
                       className="w-full px-3 py-2 border rounded-lg"
                       placeholder="9.3"
-                      value={formData.rating}
+                      value={formData.rating || ''}
                       onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
                     />
                   </div>
@@ -325,7 +350,10 @@ export default function Management() {
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsAddDialogOpen(false)}
+                    onClick={() => {
+                      setIsAddDialogOpen(false);
+                      setFormData({ title: '', year: '', rating: '', plot: '', genres: '', directors: '', cast: '', runtime: '' });
+                    }}
                     className="px-4 py-2 border rounded-lg hover:bg-gray-50"
                   >
                     Cancel
@@ -523,7 +551,8 @@ export default function Management() {
                   <input
                     type="text"
                     name="title"
-                    defaultValue={editingMovie.title}
+                    value={formData.title || ''}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg"
                     required
                   />
@@ -532,7 +561,8 @@ export default function Management() {
                   <label className="block text-sm font-medium mb-1">Plot</label>
                   <textarea
                     name="plot"
-                    defaultValue={editingMovie.plot}
+                    value={formData.plot || ''}
+                    onChange={(e) => setFormData({ ...formData, plot: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg"
                     rows="3"
                     required
@@ -544,7 +574,8 @@ export default function Management() {
                     <input
                       name="year"
                       type="number"
-                      defaultValue={editingMovie.year}
+                      value={formData.year || ''}
+                      onChange={(e) => setFormData({ ...formData, year: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg"
                       required
                     />
@@ -554,7 +585,8 @@ export default function Management() {
                     <input
                       name="runtime"
                       type="number"
-                      defaultValue={editingMovie.runtime}
+                      value={formData.runtime || ''}
+                      onChange={(e) => setFormData({ ...formData, runtime: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg"
                       required
                     />
@@ -565,7 +597,8 @@ export default function Management() {
                   <input
                     name="genres"
                     type="text"
-                    defaultValue={editingMovie.genres?.join(', ')}
+                    value={formData.genres || ''}
+                    onChange={(e) => setFormData({ ...formData, genres: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg"
                     required
                   />
@@ -575,7 +608,8 @@ export default function Management() {
                   <input
                     name="directors"
                     type="text"
-                    defaultValue={editingMovie.directors?.join(', ')}
+                    value={formData.directors || ''}
+                    onChange={(e) => setFormData({ ...formData, directors: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg"
                     required
                   />
@@ -585,7 +619,8 @@ export default function Management() {
                   <input
                     name="cast"
                     type="text"
-                    defaultValue={editingMovie.cast?.join(', ')}
+                    value={formData.cast || ''}
+                    onChange={(e) => setFormData({ ...formData, cast: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg"
                     required
                   />
@@ -598,7 +633,8 @@ export default function Management() {
                     step="0.1"
                     min="0"
                     max="10"
-                    defaultValue={editingMovie.imdb?.rating}
+                    value={formData.rating || ''}
+                    onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg"
                   />
                 </div>
